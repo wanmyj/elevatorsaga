@@ -147,6 +147,77 @@ describe("Elevator Saga", function() {
 		});
 	});
 
+	describe("World object", function() {
+		it("allows boarding at floor 0 when indicators start off and user listener turns up indicator on", function() {
+			var creator = createWorldCreator();
+			var world = creator.createWorld({ floorCount: 4, elevatorCount: 1, spawnRate: 0.5 });
+			var elevatorInterface = world.elevatorInterfaces[0];
+			var elevator = world.elevators[0];
+			var floor0 = world.floors[0];
+			var user = new User(70);
+
+			elevatorInterface.goingUpIndicator(false);
+			elevatorInterface.goingDownIndicator(false);
+
+			floor0.on("up_button_pressed", function() {
+				if(floor0.floorNum() === elevatorInterface.currentFloor()) {
+					elevatorInterface.goingUpIndicator(true);
+				}
+			});
+
+			user.appearOnFloor(floor0, 1);
+			world.users.push(user);
+
+			expect(user.parent).toBe(null);
+
+			elevator.update(0.015);
+			elevator.updateElevatorMovement(0.015);
+
+			expect(user.parent).toBe(elevator);
+			world.unWind();
+		});
+
+		it("prioritizes up requests when both floor buttons are active and indicators are off", function() {
+			var creator = createWorldCreator();
+			var world = creator.createWorld({ floorCount: 4, elevatorCount: 1, spawnRate: 0.5 });
+			var elevatorInterface = world.elevatorInterfaces[0];
+			var elevator = world.elevators[0];
+			var floor1 = world.floors[1];
+
+			elevator.setFloorPosition(1);
+			elevatorInterface.goingUpIndicator(false);
+			elevatorInterface.goingDownIndicator(false);
+
+			spyOn(elevatorInterface, "goToFloor").and.callThrough();
+
+			floor1.pressUpButton();
+			floor1.pressDownButton();
+
+			expect(elevatorInterface.goToFloor.calls.count()).toBe(1);
+			expect(elevatorInterface.goToFloor).toHaveBeenCalledWith(1, true);
+			world.unWind();
+		});
+
+		it("does not re-arrive when down indicator is on and up button is pressed", function() {
+			var creator = createWorldCreator();
+			var world = creator.createWorld({ floorCount: 4, elevatorCount: 1, spawnRate: 0.5 });
+			var elevatorInterface = world.elevatorInterfaces[0];
+			var elevator = world.elevators[0];
+			var floor1 = world.floors[1];
+
+			elevator.setFloorPosition(1);
+			elevatorInterface.goingUpIndicator(false);
+			elevatorInterface.goingDownIndicator(true);
+
+			spyOn(elevatorInterface, "goToFloor").and.callThrough();
+
+			floor1.pressUpButton();
+
+			expect(elevatorInterface.goToFloor).not.toHaveBeenCalled();
+			world.unWind();
+		});
+	});
+
 
 	describe("Challenge requirements", function() {
 		var fakeWorld = null;

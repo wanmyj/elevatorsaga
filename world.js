@@ -133,16 +133,21 @@ var createWorldCreator = function() {
             for(var i=0, len=world.elevators.length, offset=_.random(len-1); i < len; ++i) {
                 var elevIndex = (i + offset) % len;
                 var elevator = world.elevators[elevIndex];
-                if( eventName === "up_button_pressed" && elevator.goingUpIndicator ||
-                    eventName === "down_button_pressed" && elevator.goingDownIndicator) {
+                var isSameFloorAndReady = elevator.currentFloor === floor.level && elevator.isOnAFloor() && !elevator.isMoving && !elevator.isFull();
+                var matchesIndicatorDirection =
+                    (eventName === "up_button_pressed" && elevator.goingUpIndicator) ||
+                    (eventName === "down_button_pressed" && elevator.goingDownIndicator);
+                var hasNoIndicators = !elevator.goingUpIndicator && !elevator.goingDownIndicator;
+                var bothButtonsActive = !!floor.buttonStates.up && !!floor.buttonStates.down;
+                var noIndicatorUpPriority = !(hasNoIndicators && bothButtonsActive && eventName === "down_button_pressed");
 
-                    // Elevator is heading in correct direction, check for suitability
-                    if(elevator.currentFloor === floor.level && elevator.isOnAFloor() && !elevator.isMoving && !elevator.isFull()) {
-                        // Potentially suitable to get into
-                        // Use the interface queue functionality to queue up this action
-                        world.elevatorInterfaces[elevIndex].goToFloor(floor.level, true);
-                        return;
-                    }
+                // Re-arrive for same-floor ready elevators when direction matches,
+                // or when no indicators are lit (event-order-safe fallback).
+                if(isSameFloorAndReady && (matchesIndicatorDirection || (hasNoIndicators && noIndicatorUpPriority))) {
+                    // Potentially suitable to get into
+                    // Use the interface queue functionality to queue up this action
+                    world.elevatorInterfaces[elevIndex].goToFloor(floor.level, true);
+                    return;
                 }
             }
         }
