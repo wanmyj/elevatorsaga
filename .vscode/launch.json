@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Elevator Saga (index)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:8080/index.html",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "serve-local-8080"
+    },
+    {
+      "name": "Debug Jasmine Tests",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:8080/test/index.html",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "serve-local-8080"
+    }
+  ]
+}
